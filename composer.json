@@ -1,0 +1,23 @@
+{
+    "name": "wp-cli/wp-ee-command",
+    "description": "Start a development server for WordPress",
+    "type": "wp-cli-package",
+    "homepage": "https://github.com/bnap00/wp-ee-command",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Bharat Parsiya",
+            "email": "bnap00@gmail.com",
+            "homepage": "https://www.dockerandbash.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.29"
+    },
+    "autoload": {
+        "psr-4": {
+            "": "src/"
+        },
+        "files": [ "config-command.php" ]
+    }
+}
