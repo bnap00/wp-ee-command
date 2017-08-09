@@ -91,7 +91,7 @@ class EE_DB extends SQLite3 {
 	 * @return bool if the
 	 */
 	public function update_site( $site_name, $site_type, $cache_type, $php_version, $sql_username, $sql_db_name, $sql_password, $multisite ) {
-		$query = 'UPDATE site_data SET `site_type` = \'' . '\' `cache_type` = \'' . $cache_type . '\' `php_version` = \'' . $php_version . '\' `sql_username` = \'' . $sql_username . '\' `sql_db_name` = \'' . $sql_db_name . '\' `sql_password` = \'' . $sql_password . '\' `multi_site` = \'' . $multisite . '\' WHERE `site_name` = \'' . $site_name . '\'';
+		$query = 'UPDATE site_data SET `site_type` = \'' . $site_type . '\', `cache_type` = \'' . $cache_type . '\', `php_version` = \'' . $php_version . '\', `sql_username` = \'' . $sql_username . '\', `sql_db_name` = \'' . $sql_db_name . '\', `sql_password` = \'' . $sql_password . '\', `multi_site` = \'' . $multisite . '\' WHERE `site_name` = \'' . $site_name . '\'';
 		if ( $this -> exec( $query ) ) {
 			return true;
 		} else {
@@ -398,6 +398,7 @@ if ( ! class_exists( 'EE_Site_Command' ) && class_exists( 'EE_DB' ) ) {
 		public function update( $args, $ass_args ) {
 			$db = new EE_DB();
 			$db -> init();
+			$current_settings = $db->site_info($args[0]);
 
 			if ( ! isset( $args[ 0 ] ) || empty( $args[ 0 ] ) ) {
 				WP_CLI ::error( 'You cannot update site without sitename' );
@@ -504,11 +505,6 @@ if ( ! class_exists( 'EE_Site_Command' ) && class_exists( 'EE_DB' ) ) {
 				$mysql = true;
 			}
 
-
-			$db = new EE_DB();
-			$db-> init();
-			$current_settings = $db->site_info($args[0]);
-
 			if ( 'disabled' !== $current_settings['multi_site'] && $current_settings['multi_site'] !== $multisite ) {
 				WP_CLI::error( 'You cannot change type of multi site.' );
 			}
@@ -520,6 +516,11 @@ if ( ! class_exists( 'EE_Site_Command' ) && class_exists( 'EE_DB' ) ) {
 				$sql_password = $this -> _randomPassword();
 
 			}
+			$site_type    = isset( $site_type ) ? $site_type : 'html';
+			if ( 'wp' === $current_settings['site_type'] && 'php' === $site_type) {
+				$site_type = 'wp';
+			}
+
 			$site_type    = isset( $site_type )    ? $site_type    : $current_settings['site_type'];
 			$cache_type   = isset( $cache_type )   ? $cache_type   : $current_settings['cache_type'];
 			$php_version  = isset( $php_version )  ? $php_version  : $current_settings['php_version'];
@@ -529,8 +530,8 @@ if ( ! class_exists( 'EE_Site_Command' ) && class_exists( 'EE_DB' ) ) {
 			$sql_password = isset( $sql_password ) ? $sql_password : $current_settings['sql_password'];
 
 
-			if ( $db -> update_site( $args[ 0 ], $site_type, $cache_type, $php_version, $sql_username, $sql_db_name, $sql_password, $multisite ) ) {
-				WP_CLI::success( 'Site created successfully' );
+			if ( $db -> update_site( $args[0], $site_type, $cache_type, $php_version, $sql_username, $sql_db_name, $sql_password, $multisite ) ) {
+				WP_CLI::success( 'Site updated successfully' );
 			} else {
 				WP_CLI::error( 'An error occured' );
 			}
