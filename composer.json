@@ -18,7 +18,7 @@
         "psr-4": {
             "": "src/"
         },
-        "files": [ "config-command.php" ]
+        "files": [ "ee-command.php" ]
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
