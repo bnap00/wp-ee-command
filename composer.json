@@ -28,8 +28,7 @@
         },
         "bundled": true,
         "commands": [
-            "cache",
-            "transient"
+            "ee site"
         ]
     }
 }
