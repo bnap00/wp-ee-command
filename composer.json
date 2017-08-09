@@ -1,5 +1,5 @@
 {
-    "name": "wp-cli/wp-ee-command",
+    "name": "bnap00/wp-ee-command",
     "description": "Start a development server for WordPress",
     "type": "wp-cli-package",
     "homepage": "https://github.com/bnap00/wp-ee-command",
