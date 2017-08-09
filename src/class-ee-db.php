@@ -131,4 +131,3 @@ if ( class_exists( 'EE_DB' ) ) {
 
 	}
 }
-

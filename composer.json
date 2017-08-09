@@ -19,5 +19,17 @@
             "": "src/"
         },
         "files": [ "config-command.php" ]
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.x-dev"
+        },
+        "bundled": true,
+        "commands": [
+            "cache",
+            "transient"
+        ]
     }
 }
