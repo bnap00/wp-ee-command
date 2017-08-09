@@ -350,7 +350,7 @@ if ( ! class_exists( 'EE_Site_Command' ) && class_exists( 'EE_DB' ) ) {
 		}
 
 		/**
-		 * Create site.
+		 * Update existing site.
 		 *
 		 * ## OPTIONS
 		 *
