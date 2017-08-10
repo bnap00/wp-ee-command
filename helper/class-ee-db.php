@@ -216,7 +216,7 @@ class EE_DB extends SQLite3 {
 	 * @return array
 	 */
 	public function site_info( $site_name ) {
-		$query  = "SELECT * FROM `site_Data` WHERE `site_name`='. $site_name';";
+		$query  = "SELECT * FROM `site_Data` WHERE `site_name`='$site_name';";
 		$result = $this->query( $query );
 		$row    = $result->fetchArray( SQLITE3_INTEGER );
 
