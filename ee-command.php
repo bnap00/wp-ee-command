@@ -524,6 +524,7 @@ if ( ! class_exists( 'EE_Site_Command' ) && class_exists( 'EE_DB' ) ) {
 			}
 
 			$site_type = isset( $site_type ) ? $site_type : 'html';
+
 			if ( 'wp' === $current_settings['site_type'] && 'php' === $site_type ) {
 				$site_type = 'wp';
 			}
@@ -576,7 +577,9 @@ if ( ! class_exists( 'EE_Site_Command' ) && class_exists( 'EE_DB' ) ) {
 			if ( ! empty( $info ) ) {
 				$this->_show_in_table( $info );
 			}
+
 			WP_CLI::confirm( 'Are you sure you want to delete this site?? THIS CANNOT BE UNDONE' );
+
 			if ( $db->delete_site( $args[0] ) ) {
 				WP_CLI::success( 'Site deleted successfully' );
 			} else {

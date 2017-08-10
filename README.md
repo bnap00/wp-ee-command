@@ -9,11 +9,11 @@ wp package install https://github.com/bnap00/wp-ee-command.git
 * That's it, No other steps.
 
 ### Commands.
-* wp ee site create 
-* wp ee site list
-* wp ee site update
-* wp ee site delete
-* wp ee site info 
+* wp ee site create (Command to create new site)
+* wp ee site list   (List all created sites)
+* wp ee site update (Update a site)
+* wp ee site delete (Delete a site)
+* wp ee site info   (Show information of a particular site)
 
 _You can check about the options and flag that you can pass using `--help` with any command specified above_
 
