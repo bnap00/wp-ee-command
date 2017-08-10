@@ -31,6 +31,13 @@ class EE_DB extends SQLite3 {
 	private $config_file = 'data.db';
 
 	/**
+	 * Incompatibility matrix.
+	 *
+	 * @var string
+	 */
+	private $incompatibility_matrix = array();
+
+	/**
 	 * EE_DB constructor.
 	 */
 	function __construct() {
@@ -53,6 +60,71 @@ class EE_DB extends SQLite3 {
 			`sql_password` TEXT,
 			`multi_site`   TEXT DEFAULT \'disabled\'
 			);' );
+
+		$this->incompatibility_matrix = array(
+			'html'     => array(
+				'php',
+				'php7',
+				'mysql',
+				'wp',
+				'wpfc',
+				'w3tc',
+				'wpsc',
+				'wpredis',
+				'wpsubdir',
+				'wpsubdom',
+			),
+			'php'      => array(),
+			'php7'     => array(),
+			'mysql'    => array(),
+			'wp'       => array(),
+			'wpfc'     => array(
+				'wpredis',
+				'w3tc',
+				'wpsc',
+			),
+			'w3tc'     => array(
+				'wpredis',
+				'wpsc',
+			),
+			'wpsc'     => array(
+				'wpredis',
+			),
+			'wpredis'  => array(),
+			'wpsubdir' => array(
+				'wpsubdom',
+			),
+		);
+	}
+
+	/**
+	 * Check if the input associative args are compatible with each other.
+	 *
+	 * @param array $ass_args associative argurments to create command.
+	 *
+	 * @return bool will exit the function in case of incompatibility and return true to continue.
+	 */
+	function check_compatibility( $ass_args ) {
+		if ( ! empty( $ass_args ) ) {
+			foreach ( $ass_args as $key => $value ) {
+				foreach ( $ass_args as $inner_key => $inner_value ) {
+					if ( $key === $inner_key ) {
+						continue;
+					} else {
+						if ( array_key_exists( $inner_key, $this->incompatibility_matrix[ $key ] ) ) {
+							WP_CLI::error( "Cannot use the combination of inputs : $key and $inner_key" );
+						} elseif ( array_key_exists( $key, $this->incompatibility_matrix[ $inner_key ] ) ) {
+							WP_CLI::error( "Cannot use the combination of inputs : $key and $inner_key" );
+						} else {
+							continue;
+						}
+					}
+				}
+			}
+		} else {
+			WP_CLI::error( 'empty argumets to check' );
+		}
+		return true;
 	}
 
 	/**
@@ -229,102 +301,57 @@ if ( ! class_exists( 'EE_Site_Command' ) && class_exists( 'EE_DB' ) ) {
 			if ( $db->site_exists( $args[0] ) ) {
 				WP_CLI::error( 'Site Already existing with domain : ' . $args[0] );
 			}
-			if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpsubdir' ) ) {
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpsubdom' ) ) {
-					WP_CLI::error( 'you cannot create wp subdir site with wp subdomain site' );
-				}
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
-					WP_CLI::error( 'you cannot create a wordpress site with html' );
-				}
+			if ( empty( $ass_args ) ) {
+				$ass_args['html'] = true;   // Creates html site by default if nothing specified.
+			}
+			if ( ! $db->check_compatibility( $ass_args ) ) {
+				WP_CLI::error( 'Something went wrong while checking compatibility' );
+			}
+			if ( WP_CLI\Utils\get_flag_value( $ass_args, 'wpsubdir' ) ) {
 				$multisite = 'subdirectory';
 				$site_type = 'wp';
 			}
-			if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpsubdom' ) ) {
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpsubdir' ) ) {
-					WP_CLI::error( 'you cannot create wp subdir site with wp subdomain site' );
-				}
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
-					WP_CLI::error( 'you cannot create a wordpress site with html' );
-				}
+			if ( WP_CLI\Utils\get_flag_value( $ass_args, 'wpsubdom' ) ) {
 				$multisite = 'subdomain';
 				$site_type = 'wp';
 			}
 
 			if ( isset( $ass_args['w3tc'] ) && $ass_args['w3tc'] ) {
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
-					WP_CLI::error( 'you cannot create a wordpress site with html' );
-				}
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpsc' ) ) {
-					WP_CLI::error( 'cannot combine w3tc with wpsc' );
-				}
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpfc' ) ) {
-					WP_CLI::error( 'cannot combine w3tc with wpfc' );
-				}
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpredis' ) ) {
-					WP_CLI::error( 'cannot combine w3tc with wpredis' );
-				}
 				$cache_type = 'total_cache';
 				$site_type  = 'wp';
 			}
-			if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpsc' ) ) {
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
-					WP_CLI::error( 'you cannot create a wordpress site with html' );
-				}
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpfc' ) ) {
-					WP_CLI::error( 'cannot combine wpsc with wpfc' );
-				}
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpredis' ) ) {
-					WP_CLI::error( 'cannot combine wpsc with wpredis' );
-				}
+			if ( WP_CLI\Utils\get_flag_value( $ass_args, 'wpsc' ) ) {
 				$cache_type = 'super_cache';
 				$site_type  = 'wp';
 			}
-			if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpfc' ) ) {
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
-					WP_CLI::error( 'you cannot create a wordpress site with html' );
-				}
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpredis' ) ) {
-					WP_CLI::error( 'cannot combine wpfc with wpfc' );
-				}
+			if ( WP_CLI\Utils\get_flag_value( $ass_args, 'wpfc' ) ) {
 				$cache_type = 'fast_cgi_cache';
 				$site_type  = 'wp';
 			}
-			if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpredis' ) ) {
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
-					WP_CLI::error( 'you cannot create a wordpress site with html' );
-				}
+			if ( WP_CLI\Utils\get_flag_value( $ass_args, 'wpredis' ) ) {
 				$cache_type = 'redis_cache';
 				$site_type  = 'wp';
 			}
 
 			if ( ( isset( $ass_args['wp'] ) && $ass_args['wp'] ) ) {
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
-					WP_CLI::error( 'you cannot create a wordpress site with html' );
-				}
 				$site_type = 'wp';
 			}
 
-			if ( ( WP_CLI\Utils\get_flag_value( $assoc_args, 'php' ) ) || ( WP_CLI\Utils\get_flag_value( $assoc_args, 'php7' ) ) ) {
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
-					WP_CLI::error( 'you cannot create a php site with html' );
-				}
+			if ( ( WP_CLI\Utils\get_flag_value( $ass_args, 'php' ) ) || ( WP_CLI\Utils\get_flag_value( $ass_args, 'php7' ) ) ) {
 				$php_version = '5.6';
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'php7' ) ) {
+				if ( WP_CLI\Utils\get_flag_value( $ass_args, 'php7' ) ) {
 					$php_version = '7.0';
 				}
-				$site_type = isset( $site_type ) && 'wp' === $site_type ? 'wp' : 'php';
+				$site_type = 'wp' === $site_type ? 'wp' : 'php';
 			}
-			if ( ( WP_CLI\Utils\get_flag_value( $assoc_args, 'mysql' ) ) ) {
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
-					WP_CLI::error( 'you cannot create a php site with html' );
-				}
+			if ( ( WP_CLI\Utils\get_flag_value( $ass_args, 'mysql' ) ) ) {
 				$mysql = true;
 			}
 
-			if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
+			if ( WP_CLI\Utils\get_flag_value( $ass_args, 'html' ) ) {
 				$site_type = 'html';
 			}
-			if ( isset( $site_type ) && 'wp' === $site_type ) {
+			if ( 'wp' === $site_type ) {
 				if ( ! isset( $php_version ) ) {
 					$php_version = '5.6';
 				}
@@ -407,105 +434,60 @@ if ( ! class_exists( 'EE_Site_Command' ) && class_exists( 'EE_DB' ) ) {
 			$db->init();
 			$current_settings = $db->site_info( $args[0] );
 
-			if ( ! isset( $args[0] ) || empty( $args[0] ) ) {
+			if ( empty( $args ) ) {
 				WP_CLI::error( 'You cannot update site without sitename' );
+			}
+			if ( empty( $ass_args ) ) {
+				WP_CLI::error( 'You cannot update site without arguments to upgrade' );
+			}
+			if ( ! $db->check_compatibility( $ass_args ) ) {
+				WP_CLI::error( 'Some error occurred during argument checking' );
 			}
 			if ( ! $db->site_exists( $args[0] ) ) {
 				WP_CLI::error( 'Site does not exist with domain : ' . $args[0] );
 			}
-			if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpsubdir' ) ) {
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpsubdom' ) ) {
-					WP_CLI::error( 'you cannot create wp subdir site with wp subdomain site' );
-				}
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
-					WP_CLI::error( 'you cannot create a wordpress site with html' );
-				}
+			if ( WP_CLI\Utils\get_flag_value( $ass_args, 'wpsubdir' ) ) {
 				$multisite = 'subdirectory';
 				$site_type = 'wp';
 			}
-			if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpsubdom' ) ) {
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpsubdir' ) ) {
-					WP_CLI::error( 'you cannot create wp subdir site with wp subdomain site' );
-				}
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
-					WP_CLI::error( 'you cannot create a wordpress site with html' );
-				}
+			if ( WP_CLI\Utils\get_flag_value( $ass_args, 'wpsubdom' ) ) {
 				$multisite = 'subdomain';
 				$site_type = 'wp';
 			}
 
 			if ( isset( $ass_args['w3tc'] ) && $ass_args['w3tc'] ) {
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
-					WP_CLI::error( 'you cannot create a wordpress site with html' );
-				}
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpsc' ) ) {
-					WP_CLI::error( 'cannot combine w3tc with wpsc' );
-				}
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpfc' ) ) {
-					WP_CLI::error( 'cannot combine w3tc with wpfc' );
-				}
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpredis' ) ) {
-					WP_CLI::error( 'cannot combine w3tc with wpredis' );
-				}
 				$cache_type = 'total_cache';
 				$site_type  = 'wp';
 			}
-			if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpsc' ) ) {
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
-					WP_CLI::error( 'you cannot create a wordpress site with html' );
-				}
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpfc' ) ) {
-					WP_CLI::error( 'cannot combine wpsc with wpfc' );
-				}
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpredis' ) ) {
-					WP_CLI::error( 'cannot combine wpsc with wpredis' );
-				}
+			if ( WP_CLI\Utils\get_flag_value( $ass_args, 'wpsc' ) ) {
 				$cache_type = 'super_cache';
 				$site_type  = 'wp';
 			}
-			if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpfc' ) ) {
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
-					WP_CLI::error( 'you cannot create a wordpress site with html' );
-				}
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpredis' ) ) {
-					WP_CLI::error( 'cannot combine wpfc with wpfc' );
-				}
+			if ( WP_CLI\Utils\get_flag_value( $ass_args, 'wpfc' ) ) {
 				$cache_type = 'fast_cgi_cache';
 				$site_type  = 'wp';
 			}
-			if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'wpredis' ) ) {
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
-					WP_CLI::error( 'you cannot create a wordpress site with html' );
-				}
+			if ( WP_CLI\Utils\get_flag_value( $ass_args, 'wpredis' ) ) {
 				$cache_type = 'redis_cache';
 				$site_type  = 'wp';
 			}
 
 			if ( ( isset( $ass_args['wp'] ) && $ass_args['wp'] ) ) {
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
-					WP_CLI::error( 'you cannot create a php site with html' );
-				}
 				$site_type = 'wp';
 			}
 
-			if ( ( WP_CLI\Utils\get_flag_value( $assoc_args, 'php' ) ) || ( WP_CLI\Utils\get_flag_value( $assoc_args, 'php7' ) ) ) {
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
-					WP_CLI::error( 'you cannot create a php site with html' );
-				}
+			if ( ( WP_CLI\Utils\get_flag_value( $ass_args, 'php' ) ) || ( WP_CLI\Utils\get_flag_value( $ass_args, 'php7' ) ) ) {
 				$php_version = '5.6';
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'php7' ) ) {
+				if ( WP_CLI\Utils\get_flag_value( $ass_args, 'php7' ) ) {
 					$php_version = '7.0';
 				}
 				$site_type = isset( $site_type ) && 'wp' === $site_type ? 'wp' : 'php';
 			}
-			if ( ( WP_CLI\Utils\get_flag_value( $assoc_args, 'mysql' ) ) ) {
-				if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
-					WP_CLI::error( 'you cannot create a php site with html' );
-				}
+			if ( ( WP_CLI\Utils\get_flag_value( $ass_args, 'mysql' ) ) ) {
 				$mysql = true;
 			}
 
-			if ( WP_CLI\Utils\get_flag_value( $assoc_args, 'html' ) ) {
+			if ( WP_CLI\Utils\get_flag_value( $ass_args, 'html' ) ) {
 				$site_type = 'html';
 			}
 			if ( isset( $site_type ) && 'wp' === $site_type ) {
