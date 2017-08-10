@@ -144,7 +144,8 @@ class EE_DB extends SQLite3 {
 	 */
 	public function insert_site( $site_name, $site_type, $cache_type, $php_version, $sql_username, $sql_db_name, $sql_password, $multisite ) {
 		$query = "INSERT INTO site_data (site_name, site_type, cache_type, php_version, sql_username, sql_db_name, sql_password, multi_site) VALUES ( '$site_name', '$site_type', '$cache_type', '$php_version', '$sql_username', '$sql_db_name', '$sql_password', '$multisite');";
-		if ( $this->changes( $query ) > 0 ) {
+		$this->exec( $query );
+		if ( $this->changes() > 0 ) {
 			return true;
 		} else {
 			return false;
@@ -168,7 +169,8 @@ class EE_DB extends SQLite3 {
 	 */
 	public function update_site( $site_name, $site_type, $cache_type, $php_version, $sql_username, $sql_db_name, $sql_password, $multisite ) {
 		$query = "UPDATE site_data SET `site_type` = '$site_type', `cache_type` = '$cache_type', `php_version` = '$php_version', `sql_username` = '$sql_username', `sql_db_name` = '$sql_db_name', `sql_password` = '$sql_password', `multi_site` = '$multisite' WHERE `site_name` ='$site_name'";
-		if ( $this->changes( $query ) > 0 ) {
+		$this->exec( $query );
+		if ( $this->changes() > 0 ) {
 			return true;
 		} else {
 			return false;
@@ -230,7 +232,8 @@ class EE_DB extends SQLite3 {
 	 */
 	public function delete_site( $site_name ) {
 		$query = "DELETE FROM `site_data` WHERE `site_name`='$site_name';";
-		if ( $this->changes( $query ) > 0 ) {
+		$this->exec( $query );
+		if ( $this->changes() > 0 ) {
 			return true;
 		} else {
 			return false;
